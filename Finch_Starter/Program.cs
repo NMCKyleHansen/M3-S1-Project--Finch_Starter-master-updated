@@ -533,7 +533,7 @@ namespace Finch_Starter
             double currentLightValue=0;
             DisplayHeader("Set Alarm");
             Console.WriteLine($"Sensors to monitor: {sensorsToMonitor}");
-            Console.WriteLine("Range Type {rangeType}");
+            Console.WriteLine($"Range Type {rangeType}");
             Console.WriteLine($"minimum/maximum Threshold Value: {minMaxThresholdValue}");
             Console.WriteLine($"Time to monitor: {timeToMonitor}");
             Console.WriteLine("");
@@ -541,7 +541,10 @@ namespace Finch_Starter
             DisplayContinuePrompt();
             while (secondsRun < timeToMonitor && thresholdMet == false)
             {
+                Console.SetCursorPosition(70, 0);
+                Console.WriteLine("Current Clock Count: " + secondsRun);
                 currentLightValue = LightAlarmDisplaySensorsCurrent(sensorsToMonitor, finchRobot);
+                Console.SetCursorPosition(0, secondsRun + 6);
                 switch (rangeType)
                 {
                     case "minimum":
@@ -582,12 +585,18 @@ namespace Finch_Starter
             {
                 case "left":
                     currentLightValue = finchRobot.getLeftLightSensor();
+                    Console.SetCursorPosition(70, 1);
+                    Console.WriteLine("Current left value: " + currentLightValue);
                     break;
                 case "right":
                     currentLightValue = finchRobot.getRightLightSensor();
+                    Console.SetCursorPosition(70, 1);
+                    Console.WriteLine("Current right value: " + currentLightValue);
                     break;
                 case "both":
                     currentLightValue = (finchRobot.getRightLightSensor() + finchRobot.getLeftLightSensor()) / 2;
+                    Console.SetCursorPosition(70, 1);
+                    Console.WriteLine("Current right left avg value: " + currentLightValue);
                     break;
             }
             return currentLightValue;
@@ -761,7 +770,12 @@ namespace Finch_Starter
             DisplayContinuePrompt();
             while (secondsRun < timeToMonitor && thresholdMet == false)
             {
+                Console.SetCursorPosition(70, 0);
                 currentTemperatureValue = ConvertCelsiusToFahrenheit(finchRobot.getTemperature());
+                Console.WriteLine("Current Clock Count: " + secondsRun);
+                Console.SetCursorPosition(70, 1);
+                Console.WriteLine("Current Temperature: " + currentTemperatureValue);
+                Console.SetCursorPosition(0, secondsRun +6);
                 switch (rangeType)
                 {
                     case "minimum":
