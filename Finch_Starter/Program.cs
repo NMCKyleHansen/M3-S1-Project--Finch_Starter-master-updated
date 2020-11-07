@@ -3,6 +3,7 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.CodeDom;
+using System.IO;
 
 public enum Command
 {
@@ -29,7 +30,7 @@ namespace Finch_Starter
         //                      with the Finch robot via the Finch API.
         // Author:              Kyle Hansen
         // Date Created:        09/30/2020
-        // Date Modified:       10/17/2020        
+        // Date Modified:       11/07/2020        
         // *************************************************************
 
         static void Main(string[] args)
@@ -40,6 +41,10 @@ namespace Finch_Starter
             //
             Finch myFinch;
             myFinch = new Finch();
+
+            //
+            // Display logon/register
+            DisplayLogonOrRegister();
 
             //
             // Display welcome screen
@@ -69,6 +74,12 @@ namespace Finch_Starter
         //
         static void DisplayHeader(string headerText)
         {
+            (ConsoleColor foregroundColor, ConsoleColor backgroundColor) themeColors;
+            string fileMessage;
+            Console.Clear();
+            themeColors = ReadThemeData(out fileMessage);
+            Console.ForegroundColor = themeColors.foregroundColor;
+            Console.BackgroundColor = themeColors.backgroundColor;
             Console.Clear();
             Console.WriteLine(headerText);
         }
@@ -79,6 +90,7 @@ namespace Finch_Starter
         static void DisplayWelcomeScreen()
         {
             Console.Clear();
+            DisplayHeader("");
             Console.WriteLine("\t\t*******************************************");
             Console.WriteLine("\t\tThis program allows the you to interact");
             Console.WriteLine("\t\twith the Finch robot via the Finch API.");
@@ -98,7 +110,7 @@ namespace Finch_Starter
             Console.Clear();
             Console.WriteLine("\t\t*******************************************");
             Console.WriteLine("\t\tThank you for using this program to interact");
-            Console.WriteLine("\t\ttwith the Finch robot via the Finch API.");
+            Console.WriteLine("\t\twith the Finch robot via the Finch API.");
             Console.WriteLine();
             Console.WriteLine("\t\tPlease Press any key to exit.");
             Console.WriteLine();
@@ -847,7 +859,8 @@ namespace Finch_Starter
                 Console.WriteLine("\t\te) Alarm System(temperature)");
                 Console.WriteLine("\t\tf) User Programming");
                 Console.WriteLine("\t\tg) Disconnect Finch Robot");
-                Console.WriteLine("\t\th) Exit");
+                Console.WriteLine("\t\th) Change Theme");
+                Console.WriteLine("\t\ti) Exit");
                 Console.WriteLine();
                 Console.WriteLine("\t\t*******************************************");
                 userInput = Console.ReadKey().Key.ToString().ToLower();
@@ -876,6 +889,9 @@ namespace Finch_Starter
                         disconnected = DisplayDisconnectFinchRobot(finchRobot);
                         break;
                     case "h":
+                        DataDisplaySetTheme();
+                        break;
+                    case "i":
                         menuloop = false;
                         break;
                     default:
@@ -1345,5 +1361,354 @@ namespace Finch_Starter
             DisplayContinuePrompt();
         }
 
+        static (ConsoleColor foregroundColor, ConsoleColor backgroundColor) ReadThemeData(out string fileReadMessage)
+        {
+            string dataPath = @"Data/Theme.txt";
+            string[] themeColors;
+            ConsoleColor foregroundColor = ConsoleColor.White;
+            ConsoleColor backgroundColor= ConsoleColor.Black;
+            try
+            {
+                themeColors = File.ReadAllLines(dataPath);
+                if (Enum.TryParse(themeColors[0], true, out foregroundColor) &&
+                    Enum.TryParse(themeColors[1], true, out backgroundColor))
+                {
+                    fileReadMessage = "Theme Found";
+                }
+                else
+                {
+                    fileReadMessage = "We have encountered format issues.";
+                }
+            }
+            catch (DirectoryNotFoundException)
+            {
+                fileReadMessage = "Folder not found.";
+            }
+            catch (Exception)
+            {
+                fileReadMessage = "We cannot read the theme file.";
+            }
+
+            return (foregroundColor, backgroundColor);
+        }
+
+        static string WriteThemeData(ConsoleColor foreground, ConsoleColor background)
+        {
+            string dataPath = @"Data/Theme.txt";
+            string fileWriteMessage = "";
+
+            try
+            {
+                File.WriteAllText(dataPath, foreground.ToString() + "\n");
+                File.AppendAllText(dataPath, background.ToString());
+                fileWriteMessage = "Theme Updated";
+            }
+            catch (DirectoryNotFoundException)
+            {
+                fileWriteMessage = "Folder not found.";
+            }
+            catch (Exception)
+            {
+                fileWriteMessage = "We cannot write to the theme file.";
+            }
+
+            return fileWriteMessage;
+        }
+
+        static ConsoleColor GetConsoleColorFromUser(string property)
+        {
+            ConsoleColor consoleColor;
+            bool validConsoleColor;
+
+            do
+            {
+                Console.Write($"\tEnter a value for the {property}:");
+                validConsoleColor = Enum.TryParse<ConsoleColor>(Console.ReadLine(), true, out consoleColor);
+
+                if (!validConsoleColor)
+                {
+                    Console.WriteLine("\n\t***** You did not provide a valid console color. Please try again. *****\n");
+                }
+                else
+                {
+                    validConsoleColor = true;
+                }
+
+            } while (!validConsoleColor);
+
+            return consoleColor;
+        }
+
+        static void DataDisplaySetTheme()
+        {
+            (ConsoleColor foregroundColor, ConsoleColor backgroundColor) themeColors;
+            bool themeChosen = false;
+            string fileMessage;
+
+            //
+            // Set current theme from the data
+            //
+            themeColors = ReadThemeData(out fileMessage);
+            Console.WriteLine("Set Application Theme");
+            if (fileMessage == "Theme Found")
+            {
+                Console.ForegroundColor = themeColors.foregroundColor;
+                Console.BackgroundColor = themeColors.backgroundColor;
+                Console.Clear();
+
+                Console.WriteLine("Reading Theme from Data File....");
+                Console.WriteLine("\n\t(Theme read from data file.)\n");
+            }
+            else
+            {
+                Console.WriteLine("Read Theme from Data File");
+                Console.WriteLine("\n\t(Theme not read from data file.)");
+                Console.WriteLine($"\t*** {fileMessage} ***\n");
+            }
+            Console.WriteLine();
+            Console.WriteLine();
+           
+            Console.WriteLine($"\tCurrent foreground color: {Console.ForegroundColor}");
+            Console.WriteLine($"\tCurrent background color: {Console.BackgroundColor}");
+            Console.WriteLine();
+
+
+            Console.Write("\tWould you like to change the current theme [ yes | no ]?");
+            if (Console.ReadLine().ToLower() == "yes")
+            {
+                do
+                {
+                    //
+                    // query the user for console colors
+                    //
+                    themeColors.foregroundColor = GetConsoleColorFromUser("foreground");
+                    themeColors.backgroundColor = GetConsoleColorFromUser("background");
+
+                    //
+                    // set new theme
+                    //
+                    Console.ForegroundColor = themeColors.foregroundColor;
+                    Console.BackgroundColor = themeColors.backgroundColor;
+                    Console.Clear();
+                    Console.WriteLine("Set Application Theme");
+                    Console.WriteLine($"\tNew foreground color: {Console.ForegroundColor}");
+                    Console.WriteLine($"\tNew background color: {Console.BackgroundColor}");
+
+                    Console.WriteLine();
+                    Console.Write("\tIs this the theme you would like?");
+                    if (Console.ReadLine().ToLower() == "yes")
+                    {
+                        themeChosen = true;
+                        fileMessage = WriteThemeData(themeColors.foregroundColor, themeColors.backgroundColor);
+                        if (fileMessage == "Theme Updated")
+                        {
+                            Console.WriteLine("\n\tNew theme written to data file.\n");
+                        }
+                        else
+                        {
+                            Console.WriteLine("\n\tNew theme not written to data file.");
+                            Console.WriteLine($"\t*** {fileMessage} ***\n");
+                        }
+                    }
+
+                } while (!themeChosen);
+            }
+
+        }
+
+        static void DisplayLogon()
+        {
+            bool isValidLogon;
+            string userName;
+            string userPassword;
+
+            do
+            {
+                DisplayHeader("User Logon");
+                Console.WriteLine();
+                Console.Write("Enter your username:");
+                userName = Console.ReadLine();
+                Console.Write("Enter your password:");
+                userPassword = Console.ReadLine();
+                isValidLogon = IsValidLogon(userName, userPassword);
+                Console.WriteLine("");
+                if (isValidLogon)
+                {
+                    Console.WriteLine("Your logon credentials have been accepted.");
+                }
+                else
+                {
+                    Console.WriteLine("Your logon credentials have failed. Please try again.");
+                    Console.WriteLine("Hit any key to contunue.");
+                    DisplayContinuePrompt();
+                    Console.WriteLine("");
+                }
+
+            } while (!isValidLogon);
+            Console.WriteLine("Hit any key to contunue.");
+            DisplayContinuePrompt();
+        }
+
+        //
+        // Read in the usernames and passwords 
+        //
+        static List<(string userName, string password)> ReadUserInfo()
+        {
+            string dataPath = @"Data/Passwords.txt";
+            string[] infoArray;
+            // define the Tuple,list, and array needed to process the file
+            (string userName, string password) logonTuple;
+            List<(string userName, string password)> userInfo = new List<(string userName, string password)>();
+            infoArray = File.ReadAllLines(dataPath);
+
+            // Loop for the array of data from the file
+            foreach (string loginInfoText in infoArray)
+            {
+                //Process a line of the file. Split the string when a comma is found
+                infoArray = loginInfoText.Split(',');
+                logonTuple.userName = infoArray[0];
+                logonTuple.password = infoArray[1];
+                userInfo.Add(logonTuple);
+            }
+            return userInfo;
+        }
+        //
+        // Return a bool to show valid/invalid logon
+        //
+        static bool IsValidLogon(string userName, string userPassword)
+        {
+            bool isValid = false;
+            List<(string userName, string userPassword)> userLogons = new List<(string userName, string userPassword)>();
+            // Populate the list
+            userLogons = ReadUserInfo();
+
+            //
+            // loop through the list of registered user login tuples and check each one against the login info
+            //
+            foreach ((string userName, string userPassword) userLoginInfo in userLogons)
+            {
+                if ((userLoginInfo.userName == userName) && (userLoginInfo.userPassword == userPassword))
+                {
+                    isValid = true;
+                    // Exit loop if found
+                    break;
+                }
+            }
+            return isValid;
+        }
+        //
+        // Display for the Logon or Register Screen
+        //
+        static void DisplayLogonOrRegister()
+        {
+            string userInput;
+            bool isValid = false;
+
+            DisplayHeader("Logon or Register");
+
+            do
+            {
+                Console.WriteLine("Are you a registered user(y or n )?");
+                userInput = Console.ReadLine().Substring(0, 1).ToLower();
+
+                if (userInput == "y")
+                {
+                    DisplayLogon();
+                    isValid = true;
+                }
+                else if (userInput == "n")
+                {
+                    RegisterUser();
+                    DisplayLogon();
+                    isValid = true;
+                }
+                else
+                {
+                    Console.WriteLine("Your response was not understood. Please hit enter to continue.");
+                    Console.WriteLine("");
+                    DisplayContinuePrompt();
+                }
+            }
+            while (isValid == false);
+          
+        }
+
+        //
+        // Register user
+        //
+        static void RegisterUser()
+        {
+            bool isUsed = true;
+            string userName;
+            string userPassword;
+            DisplayHeader("Register");
+            // Loop until an unused username is entered 
+            do
+            {
+                Console.Write("Please select and enter your user name:");
+                userName = Console.ReadLine();
+                Console.Write("Please select and enter your password:");
+                userPassword = Console.ReadLine();
+                isUsed = CheckNewUserName(userName);
+                if (isUsed)
+                {
+                    Console.WriteLine("That user name is already used. Please enter another one.");
+                    Console.WriteLine("Hit any key to continue.");
+                    DisplayContinuePrompt();
+                }
+                else
+                {
+                    WriteLogonData(userName, userPassword);
+                }
+                
+            } while (isUsed);
+
+
+
+            Console.WriteLine("");
+            Console.WriteLine("Your logon informaton is as follows:");
+            Console.WriteLine("User name: "+ userName);
+            Console.WriteLine("Password: "+ userPassword);
+            Console.WriteLine("");
+            Console.WriteLine("Hit any key to continue.");
+            DisplayContinuePrompt();
+        }
+
+        //
+        // Append the new username/password to the file
+        //
+        static void WriteLogonData(string userName, string userPassword)
+        {
+            string dataPath = @"Data/Passwords.txt";
+            string logonInfoString;
+            // Add a comma, so the username/password can be processed later
+            logonInfoString = Environment.NewLine +userName + "," + userPassword;
+            File.AppendAllText(dataPath, logonInfoString);
+        }
+
+        //
+        // Need to determine if a username is already used
+        //
+        static bool CheckNewUserName(string userName)
+        {
+            bool isValid = false;
+            List<(string userName, string userPassword)> userLogons = new List<(string userName, string userPassword)>();
+            // Populate the list
+            userLogons = ReadUserInfo();
+
+            //
+            // loop through the list of registered users and see if the username is used already
+            //
+            foreach ((string userName, string userPassword) userLoginInfo in userLogons)
+            {
+                if (userLoginInfo.userName == userName)
+                {
+                    isValid = true;
+                    // Exit loop if found
+                    break;
+                }
+            }
+            return isValid;
+        }
     }
 }
